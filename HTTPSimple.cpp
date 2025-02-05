@@ -9,28 +9,65 @@
 
 void HTTPSimple::splitUrlIntoPageHost(std::string url)
 {
+	bool vf = false; //This flag tells if url has an address at the end.
+	unsigned int j = 0;
+	std::string strport = "";
 	if (url.compare(0, 7, "http://") == 0)
 	{
 		url.erase(0, 7);
 	}
 
-	unsigned int j = 0;
-	host = "";
-	for (; j < url.size() && url[j] != '/'; ++j)
+	for (; j < url.size() ; ++j)
 	{
-		host += url[j];
+		if(url[j] == ':'){
+			vf = true;	
+		}
 	}
+	if(vf == true){
+		j = 0;
+		host = "";
+		for (; j < url.size() && url[j] != ':'; ++j)
+		{
+			host += url[j];
+		}
+		std::cout << "host " << host << "\n";
+		if (j < url.size()) //found /
+		{
+			url.erase(0, (j+1));
+			strport = url;
+			url.clear();
+			port = std::stoi(strport);
+			std::cout << "port " << port << "\n";
+		}
+		else //url containts only host address
+		{
+			url.clear();
+			url += '/';
+		}
+	}else{
 
-	if (j < url.size()) //found /
-	{
-		url.erase(0, j);
+		j = 0;
+		host = "";
+		for (; j < url.size() && url[j] != '/'; ++j)
+		{
+			host += url[j];
+		}
+		std::cout << "host " << host << "\n";
+
+		if (j < url.size()) //found /
+		{
+			url.erase(0, j);
+		}
+		else //url containts only host address
+		{
+			url.clear();
+			url += '/';
+		}
+		port = 80;
 	}
-	else //url containts only host address
-	{
-		url.clear();
-		url += '/';
-	}
+	std::cout << "Sockert port " << port << "\n";
 	page = url;
+	std::cout << "url " << page << "\n";
 }
 
 std::string HTTPSimple::buildRequest(std::string type, std::string &data, bool keep_alive)
@@ -180,7 +217,7 @@ void HTTPSimple::removeFileFromUrl(std::string &url)
 
 void HTTPSimple::send(std::string &data)
 {
-	SocketClient sockfd(AF_INET, SOCK_STREAM, IPPROTO_TCP, "", host, HTTP_PORT);
+	SocketClient sockfd(AF_INET, SOCK_STREAM, IPPROTO_TCP, "", host, port);
 	sockfd.Connect();
 	start_time = std::chrono::high_resolution_clock::now();
 	sockfd.Send(data);
@@ -202,6 +239,7 @@ std::string HTTPSimple::GET(std::string url)
 	splitUrlIntoPageHost(url);
 	std::string data = "";
 	data = buildRequest(std::string("GET"), data);
+	std::cout << "datasent [" << data << "\n";
 	send(data);
 	http_code = parseResponse(data);
 	return data;

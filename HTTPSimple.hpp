@@ -13,6 +13,7 @@ class HTTPSimple
 	std::string content_type;
 	std::string version;
 	std::string host;
+	u_int16_t   port;
 	std::string page;
 
 	int http_code;

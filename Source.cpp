@@ -202,7 +202,7 @@ public:
 		}
 		catch (exception &e)
 		{
-			cout << e.what() << endl;
+ 			cout << "getConfig [" << __LINE__ << "] " << e.what() << endl;
 		}
 #ifdef DEBUG
 		cout << "data>" << data << endl;
@@ -300,17 +300,29 @@ public:
 			std::string data;
 			try
 			{
+				string url2;
+				if (url.compare(0, 8, "https://") == 0)
+				{
+					url.erase(0, 8);
+					cout << "url after erase "<< url << endl;
+					url2="http://";
+					url2.append(url);
+					url = url2;
+				}
+				cout << "url "<< __LINE__ << "-"<< url << endl;
 				data = http.GET(url + "latency.txt");
+				cout << "Data..."<< data << endl;
 			}
 			catch (exception &e)
 			{
 				cout << "exception: ";
-				cout << e.what();
+	 			cout << "getLatencyByServer [" << __LINE__ << "] " << e.what() << " ";
 			}
-
+			cout << "Continuing..." << endl;
 			// check receieved message -> test=test & 200
 			if (http.getCode() == 200 && data.compare("test=test\n") == 0)
 			{
+				cout << "recording latency..." << endl;
 				request_latency.push_back(http.getRequestLatency());
 				continue;
 			}
@@ -703,7 +715,7 @@ int main(int argc, char *argv [])
 	}
 	catch (exception &e)
 	{
-		cout << e.what() << endl << endl;
+		cout << "main [" << __LINE__ << "] " << e.what() << endl << endl;
 		op.help();
 		return EXIT_FAILURE;
 	}
@@ -770,7 +782,7 @@ int main(int argc, char *argv [])
 	{
 		cout << "Starting test - download speed";
 		double dspeed = client.speedtestDownload(server);
-		//cout << "Download speed: " << dspeed << " MBit/s" << endl;
+		cout << "Download speed: " << dspeed << " MBit/s" << endl;
 	}
 
 	if (!op.checkIfSet("download") || op.checkIfSet("upload"))

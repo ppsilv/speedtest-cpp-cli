@@ -311,14 +311,13 @@ public:
 				}
 				cout << "url "<< __LINE__ << "-"<< url << endl;
 				data = http.GET(url + "latency.txt");
-				cout << "Data..."<< data << endl;
 			}
 			catch (exception &e)
 			{
 				cout << "exception: ";
 	 			cout << "getLatencyByServer [" << __LINE__ << "] " << e.what() << " ";
 			}
-			cout << "Continuing..." << endl;
+			
 			// check receieved message -> test=test & 200
 			if (http.getCode() == 200 && data.compare("test=test\n") == 0)
 			{
@@ -386,7 +385,7 @@ public:
 		SocketClient *sockfd;
 
 	public:
-		//urlImage(std::string &url, int64_t timeout, int64_t start_time): m_sUrl(url), m_i64Timeout(timeout), m_i64Start_time(start_time)
+
 		DLJob(std::string &url, std::string &data, int job_type, SharedQueue<size_t> *speedResults):
 			m_sUrl(url), m_iJob_type(job_type), m_SpeedResults(speedResults)
 		{
@@ -493,24 +492,34 @@ public:
 		}
 	};
 
-	double speedtestDownload(int id)
-	{
+double speedtestDownload(int id)
+{	
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
 		if (!checkifServerExists(id))
 			throw Exception("Wrong server ID, cannot test - server doesn't exists");
 
 		int workers_count = stoi(m_umapServerConfig.at("threadcount"));
+		cout << "workers_count " << workers_count << " " << endl;
 		if (workers_count == 0)
 			throw Exception("Configuration of speedtest.net was changed, need to examine");
+
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
 
 		std::list<std::string> urls;
 		std::string url = m_mapServers.at(id).m_umapData.at("url");
 		HTTPSimple http;
 		http.removeFileFromUrl(url);
 
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
+
+
 		buildIMGrequests(url, urls);
 
 		SharedQueue<DLJob *> qsource;
 		SharedQueue<DLJob *> qtarget;
+
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
+
 
 		SharedQueue<size_t> speedResults;
 		SharedVariable<int> speedStatus;
@@ -519,6 +528,9 @@ public:
 		std::vector<IncomingDataWorker *> workon;
 		std::vector<DLJob> images;
 		std::list<double> speeds; 
+
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
+
 
 #if __cplusplus >= 199711L
 		std::chrono::high_resolution_clock::time_point start_time;
@@ -533,15 +545,23 @@ public:
 #endif
 
 
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
+
+
 		G_bSpeedTestMeasure = true;
 
 		start_time = chrono::high_resolution_clock::now();
-		
+
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
+
 		for (std::list<std::string>::iterator it = urls.begin(); it != urls.end(); ++it)
 		{
 			std::string data = "";
 			qsource.add(new DLJob(*it, data, 0, &speedResults));
 		}
+
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
+
 			
 		for (int i = 0; i < workers_count; ++i)
 		{
@@ -549,10 +569,16 @@ public:
 		}
 
 
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
+
+
 		for (int i = 0; i < workers_count; ++i)
 		{
 			workers.push_back(new thread(&IncomingDataWorker::run, workon.at(i))); //nejsem si jist
 		}
+
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
+
 
 		start_time = chrono::high_resolution_clock::now(); //SET TIMEOUT
 		
@@ -560,7 +586,7 @@ public:
 		size_t datasize;
 		int64_t time;
 		check_time = chrono::high_resolution_clock::now();
-		//cout << "count_images" << count_images << endl;
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
 		while (speedStatus.get() != workers_count)
 		{
 			datasize = 0;
@@ -603,11 +629,17 @@ public:
 			}
 		}
 
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
+
+
 		G_bSpeedTestMeasure = false;
 
 		double speed_max = 0;
 		double speed_sum = 0;
 		int speed_count = 0;
+
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
+
 
 		for (std::list<double>::iterator it = speeds.begin(); it != speeds.end(); ++it)
 		{
@@ -619,10 +651,24 @@ public:
 			++speed_count;
 		}
 
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
+
+		/* PAULO
+			As medições estão erradas, mas parou de dar erro na linha 554
+			que chama DLJob 
+			DLJob parou magimamente de dar erro
+			parece que o erro sumiu quando ele começõe a chamar host velocimetro-spo.virtua.com.br
+			antes ele estava chamando o host da vivo.
+		*/
+
+
 		double avg_speed = speed_sum / speed_count;
 		cout << endl;
 		cout << "Maximum download speed: " << speed_max << " MBit/s" << endl;
 		cout << "Average download speed: " << avg_speed << " MBit/s" << endl;
+
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
+
 		
 		for (int i = 0; i < workers_count; ++i)
 		{
@@ -634,6 +680,9 @@ public:
 			DLJob *item = qtarget.remove();
 			delete item;
 		}
+
+		cout << "speedtestDownload " << __LINE__ << " " << endl;
+
 
 	/*	while (qsource.size() > 0)
 		{
@@ -777,12 +826,28 @@ int main(int argc, char *argv [])
 	}
 
 	client.printServerInfo(server, latency);
+	client.printServerInfo(server, latency);
 	
 	if (!op.checkIfSet("upload") || op.checkIfSet("download"))
 	{
-		cout << "Starting test - download speed";
-		double dspeed = client.speedtestDownload(server);
-		cout << "Download speed: " << dspeed << " MBit/s" << endl;
+		try
+		{
+			cout << "Starting test - download speed" << endl;;
+			double dspeed = client.speedtestDownload(server);
+			cout << "Download speed: " << dspeed << " MBit/s" << endl;
+			/*
+				Choosed server hosted by TIM Brasil (São Paulo, Brazil) [8.06281 km]: 60000 ms
+				Choosed server hosted by TIM Brasil (São Paulo, Brazil) [8.06281 km]: 60000 ms		
+				Quando o sistem escolhe esse servidor da o seguinte erro:
+				speedtestDownload 555 
+				host https
+				source.cpp 841 ERROR stoi					
+			*/
+		}
+		catch (exception &e)
+		{
+			cout << "source.cpp " << __LINE__ << " ERROR " << e.what() << endl;
+		}		
 	}
 
 	if (!op.checkIfSet("download") || op.checkIfSet("upload"))
